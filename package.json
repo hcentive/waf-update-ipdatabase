@@ -1,0 +1,17 @@
+{
+  "name": "waf-update-ipdatabase",
+  "version": "1.0.0",
+  "description": "Updates Dynamodb database with new IP addresses to blacklist for WAF",
+  "main": "index.js",
+  "dependencies": {
+    "async": "2.0.0-rc.2",
+    "aws-sdk": "2.2.48",
+    "https": "1.0.0",
+    "underscore": "1.8.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Satyendra Sharma <satyendra.sharma@hcentive.com>",
+  "license": "ISC"
+}

@@ -1,0 +1,6 @@
+{
+  "alientvaultRBL" : "https://otx.alienvault.com/api/v1/pulses/subscribed",
+  "otx_host" : "otx.alienvault.com",
+  "otx_api_key" : "YOUR_API_KEY",
+  "otx_start_path" : "/api/v1/pulses/subscribed"
+}
