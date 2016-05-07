@@ -7,7 +7,8 @@
     "async": "2.0.0-rc.2",
     "aws-sdk": "2.2.48",
     "https": "1.0.0",
-    "underscore": "1.8.3"
+    "underscore": "1.8.3",
+    "path": "0.12.7"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
