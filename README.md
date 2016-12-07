@@ -1,4 +1,4 @@
 waf-update-ipdatabase
 =====================
 
-Updates IP address blacklist database from public RBLs.
+Creates and updates a DynamoDB database with a list of blacklisted IP addresses from public RBLs. 
