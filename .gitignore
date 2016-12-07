@@ -2,5 +2,6 @@
 .bundle
 
 conf/alienvault.json
+conf/tor.json.template
 node_modules
 node_modules/*

@@ -1,0 +1,5 @@
+{
+  "tor_exitnode_url" : "https://check.torproject.org/exit-addresses",
+  "tor_host" : "check.torproject.org",
+  "tor_path" : "exit-addresses"
+}
