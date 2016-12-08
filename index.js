@@ -27,9 +27,9 @@ exports.handler = function(event, context) {
               db.updateAddresses(data, "alienvault", function(e, d) {
                 if (e) {
                   // callback(e, null);
-                  console.log(err, err.stack);
+                  console.log(e, e.stack);
                   // process.exit(1);
-                  callback(err, null);
+                  callback(e, null);
                 } else {
                   console.log("Done updating IP database with Alienvault addresses");
                 }
@@ -58,9 +58,9 @@ exports.handler = function(event, context) {
               db.updateAddresses(data, "tor", function(e, d) {
                 if (e) {
                   // callback(e, null);
-                  console.log(err, err.stack);
+                  console.log(e, e.stack);
                   // process.exit(1);
-                  callback(err, null);
+                  callback(e, null);
                 } else {
                   console.log("Done updating IP database with Tor addresses");
                 }
@@ -75,9 +75,11 @@ exports.handler = function(event, context) {
     if (err) {
       // callback(e, null);
       console.log(err, err.stack);
-      process.exit(1);
+      context.done('error', 'IP blacklist database update failed : ' + err)
+      // process.exit(1);
     } else {
       console.log("Done updating IP database");
+      context.don(results);
     }
   });
 }
