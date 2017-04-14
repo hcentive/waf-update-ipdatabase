@@ -79,7 +79,7 @@ exports.handler = function(event, context) {
       // process.exit(1);
     } else {
       console.log("Done updating IP database");
-      context.don(results);
+      context.done(results);
     }
   });
 }
