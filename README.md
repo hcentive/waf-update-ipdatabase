@@ -43,6 +43,10 @@ Update configuration attributes with your [Alienvault OTX](https://www.alienvaul
   "otx_start_path" : "/api/v1/pulses/subscribed"
 }
 ```
+Install dependencies
+```
+$ npm install -g
+```
 Create a [Lambda deployment package](http://docs.aws.amazon.com/lambda/latest/dg/nodejs-create-deployment-pkg.html) by zipping contents of the `waf-update-ipdatabase` directory into a single zip file
 ```
 $ zip -r waf-update-ipdatabase.zip .
