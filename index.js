@@ -1,8 +1,9 @@
 var aws = require('aws-sdk');
 var async = require('async');
+var db = require('./lib/dynamodb.js');
 var alienvault = require('./lib/alienvault.js');
 var tor = require('./lib/tor.js');
-var db = require('./lib/dynamodb.js');
+var et = require('./lib/emergingthreats.js');
 
 exports.handler = function(event, context) {
 // var updateIPDatabase = function(event, context) {
@@ -69,17 +70,48 @@ exports.handler = function(event, context) {
           });
         }
       });
+    },
+    function(callback) {
+      et.getETAddresses(function(error, data) {
+        if (error) {
+          // callback(error, null);
+          console.log(error, error.stack);
+          // process.exit(1);
+          callback(error, null);
+        } else {
+          console.log("Updating blacklist table with " + data.length + " addresses from Emerging Threats");
+          db.createBlacklistTable(function(err, da) {
+            if (err != null) {
+              // callback(err, null);
+              console.log(err, err.stack);
+              // process.exit(1);
+              callback(err, null);
+            } else {
+              db.updateAddresses(data, "emergingthreats", function(e, d) {
+                if (e) {
+                  // callback(e, null);
+                  console.log(e, e.stack);
+                  // process.exit(1);
+                  callback(e, null);
+                } else {
+                  console.log("Done updating IP database with Emerging Threats addresses");
+                }
+              });
+            }
+          });
+        }
+      });
     }
   ],
   function(err, results) {
     if (err) {
       // callback(e, null);
       console.log(err, err.stack);
-      context.done('error', 'IP blacklist database update failed : ' + err)
+      // context.done('error', 'IP blacklist database update failed : ' + err)
       // process.exit(1);
     } else {
-      console.log("Done updating IP database");
-      context.done(results);
+      console.log("Done updating IP database with results - " + results);
+      // context.done(results);
     }
   });
 }

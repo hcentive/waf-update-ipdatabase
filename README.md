@@ -59,10 +59,13 @@ $ aws lambda create-function \
 --zip-file fileb://waf-update-ipdatabase.zip \
 --role waf-update-ip-database-execution \
 --runtime nodejs6.10 \
---handler export.handler
+--handler exports.handler
 ```
 The Lambda function can be invoked manually to test it.
 ```
 $ aws lambda invoke --function-name waf-update-ipdatabase result.txt
 ```
 The function should be scheduled to update the database frequently.
+
+## License
+[Apache license](http://www.apache.org/licenses/LICENSE-2.0)

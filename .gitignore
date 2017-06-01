@@ -3,5 +3,6 @@
 
 conf/alienvault.json
 conf/tor.json.template
+test/config.json
 node_modules
 node_modules/*

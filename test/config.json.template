@@ -1,0 +1,6 @@
+{
+  "tor_exitnode_url" : "https://check.torproject.org/exit-addresses",
+  "et_url" : "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",
+  "av_url" : "https://otx.alienvault.com/api/v1/pulses/subscribed",
+  "av_otx_api_key" : "YOUR_API_KEY"
+}
