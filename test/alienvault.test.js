@@ -2,38 +2,100 @@
 
 const expect = require('chai').expect;
 const request = require('request');
+const constants = require('constants');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+var _ = require('underscore');
+const nock = require('nock');
 const av = require('../lib/alienvault.js');
 const config = JSON.parse(fs.readFileSync(path.join('.', 'test', 'config.json')));
 
 describe("Alienvault", function() {
-  describe("Verify endpoint", function() {
-    it("returns IP addresses", function() {
+  describe("Get AV addresses", function(done) {
+    beforeEach(function(done) {
+      const scope = nock('https://otx.alienvault.com', {
+        reqheaders: {
+          'X-OTX-API-KEY': config.av_otx_api_key
+        }
+      })
+      .get('/api/v1/pulses/subscribed')
+      .replyWithFile(200, __dirname + '/data/av.mock.json');
+      done();
+    });
+
+    it("returns IP addresses", function(done) {
       av.getAVAddresses(null, function(err, results) {
-        expect(err).to.be.null;
-        expect(results).to.be.an('array').that.is.not.empty;
+        if (err) {
+          done(err);
+        } else {
+          expect(results).to.be.an('array').that.is.not.empty;
+          done();
+        }
       });
+    });
+
+    it("checks IP addresses", function(done) {
+      av.getAVAddresses(null, function(err, results) {
+        if (err) {
+          done(err);
+        } else {
+          expect(results).to.be.an('array').that.includes('198.154.224.48');
+          done();
+        }
+      });
+    });
+
+    it("checks IP address count", function(done) {
+      av.getAVAddresses(null, function(err, results) {
+        // console.log(results);
+        if (err) {
+          done(err);
+        } else {
+          const mockdata = JSON.parse(fs.readFileSync(path.join('.', 'test', 'data', 'av.mock.json')));
+          const indicators = _.map(mockdata.results, function(result) {
+            var ipindicators = _.pluck(_.where(result.indicators, {type: "IPv4"}), "indicator");
+            return _.union(ipindicators);
+          });
+          // console.log(_.flatten(indicators));
+          expect(results.length).to.equal(_.flatten(indicators).length);
+          done();
+        }
+      });
+    });
+
+    afterEach(function() {
+      nock.cleanAll();
     });
   });
 
-  describe("Verify records", function() {
-    it("checks IP address count", function() {
-      av.getAVAddresses(null, function(err, results) {
-        var options = {
-          url: config.av_url,
-          method: 'GET',
-          secureOptions: constants.SSL_OP_NO_TLSv1_2,
-          headers: {'X-OTX-API-KEY': confgi.av_otx_api_key}
-        };
-
-        request.get(options, function(err, response, body) {
-          var json = JSON.parse(body);
-          var count = json.count;
-          expect(count).to.equal(results.length);
-        });
-      });
-    });
-  });
+  // describe("not mocks", function(done) {
+  //   this.timeout(120000);
+  //   it("checks IP address count", function(done) {
+  //     av.getAVAddresses(null, function(err, results) {
+  //       // console.log(results);
+  //       if (err) {
+  //         done(err);
+  //       } else {
+  //         var options = {
+  //           url: config.av_url,
+  //           method: 'GET',
+  //           secureOptions: constants.SSL_OP_NO_TLSv1_2,
+  //           headers: {'X-OTX-API-KEY': config.av_otx_api_key}
+  //         };
+  //
+  //         request.get(options, function(e, response, body) {
+  //           if (e) {
+  //             done(e);
+  //           } else {
+  //             var json = JSON.parse(body);
+  //             var count = json.count;
+  //             expect(count).to.equal(results.length);
+  //             done();
+  //           }
+  //         });
+  //       }
+  //     });
+  //   });
+  // });
 });

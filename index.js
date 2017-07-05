@@ -1,34 +1,40 @@
 var aws = require('aws-sdk');
 var async = require('async');
-var db = require('./lib/dynamodb.js');
+var IPDatabase = require('./lib/dynamodb.js');
 var alienvault = require('./lib/alienvault.js');
 var tor = require('./lib/tor.js');
 var et = require('./lib/emergingthreats.js');
 
 exports.handler = function(event, context) {
 // var updateIPDatabase = function(event, context) {
+  if (event.tableName !== undefined) {
+    var ipdb = new IPDatabase(event.tableName);
+  } else {
+    var ipdb = new IPDatabase();
+  }
+
   async.parallel([
     function (callback) {
       alienvault.getAVAddresses(null, function(error, data) {     // Update DynamoDB database with new IP addresses in Alienvault's RBL.
         if (error) {
           // callback(error, null);
-          console.log(error, error.stack);
+          // console.log(error, error.stack);
           // process.exit(1);
           callback(error, null);
         } else {
           console.log("Updating blacklist table with " + data.length + " addresses from Alientvault");
 
-          db.createBlacklistTable(function(err, da) {
+          ipdb.createBlacklistTable(function(err, da) {
             if (err != null) {
               // callback(err, null);
-              console.log(err, err.stack);
+              // console.log(err, err.stack);
               // process.exit(1);
               callback(err, null);
             } else {
-              db.updateAddresses(data, "alienvault", function(e, d) {
+              ipdb.updateAddresses(data, "alienvault", function(e, d) {
                 if (e) {
                   // callback(e, null);
-                  console.log(e, e.stack);
+                  // console.log(e, e.stack);
                   // process.exit(1);
                   callback(e, null);
                 } else {
@@ -44,22 +50,22 @@ exports.handler = function(event, context) {
       tor.getTorAddresses(function(error, data) {       // Update DynamoDB database with new IP addresses in Tor Exit Nodes.
         if (error) {
           // callback(error, null);
-          console.log(error, error.stack);
+          // console.log(error, error.stack);
           // process.exit(1);
           callback(error, null);
         } else {
           console.log("Updating blacklist table with " + data.length + " addresses from Tor");
-          db.createBlacklistTable(function(err, da) {
+          ipdb.createBlacklistTable(function(err, da) {
             if (err != null) {
               // callback(err, null);
-              console.log(err, err.stack);
+              // console.log(err, err.stack);
               // process.exit(1);
               callback(err, null);
             } else {
-              db.updateAddresses(data, "tor", function(e, d) {
+              ipdb.updateAddresses(data, "tor", function(e, d) {
                 if (e) {
                   // callback(e, null);
-                  console.log(e, e.stack);
+                  // console.log(e, e.stack);
                   // process.exit(1);
                   callback(e, null);
                 } else {
@@ -75,22 +81,22 @@ exports.handler = function(event, context) {
       et.getETAddresses(function(error, data) {
         if (error) {
           // callback(error, null);
-          console.log(error, error.stack);
+          // console.log(error, error.stack);
           // process.exit(1);
           callback(error, null);
         } else {
           console.log("Updating blacklist table with " + data.length + " addresses from Emerging Threats");
-          db.createBlacklistTable(function(err, da) {
+          ipdb.createBlacklistTable(function(err, da) {
             if (err != null) {
               // callback(err, null);
-              console.log(err, err.stack);
+              // console.log(err, err.stack);
               // process.exit(1);
               callback(err, null);
             } else {
-              db.updateAddresses(data, "emergingthreats", function(e, d) {
+              ipdb.updateAddresses(data, "emergingthreats", function(e, d) {
                 if (e) {
                   // callback(e, null);
-                  console.log(e, e.stack);
+                  // console.log(e, e.stack);
                   // process.exit(1);
                   callback(e, null);
                 } else {
