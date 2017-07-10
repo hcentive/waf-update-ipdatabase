@@ -4,7 +4,8 @@ const expect = require('chai').expect;
 const request = require('request');
 const aws = require('aws-sdk');
 const IPDatabase = require("../lib/dynamodb.js");
-// import IPDatabase from '../lib/dynamodb.js';
+
+aws.config.setPromisesDependency(null);
 
 // test locally
 aws.config.update({
@@ -18,7 +19,7 @@ describe("DynamoDB", function() {
 
     it("returns table name", function(done) {
       var testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
-      testdb.createIPBlacklistTable(function(err, results) {
+      testdb.createBlacklistTable(function(err, results) {
         if (err) {
           done(err);
         } else {
@@ -97,11 +98,11 @@ describe("DynamoDB", function() {
     });
 
     it("creates records with Alienvault as source", function(done) {
-      var addresses = ["127.0.0.1", "192.168.0.1"];
-      var source = "alienvault";
-      var testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
+      const addresses = ["127.0.0.1"];
+      const source = "alienvault";
+      const testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
 
-      testdb.createIPRecords(addresses, source, function(e, r) {
+      testdb.updateAddresses(addresses, source, function(e, r) {
         if (e) {
           done(e);
         } else {
@@ -116,6 +117,68 @@ describe("DynamoDB", function() {
           };
 
           docClient.query(params, function(err, data) {
+            if (err) {
+              done(e);
+            } else {
+              expect(data.Count).to.be.above(0);
+              done();
+            }
+          });
+        }
+      });
+    });
+
+    it("creates records with Emerging Threats as source", function(done) {
+      const a = ["10.10.0.1"];
+      const s = "emergingthreats";
+      const t = new IPDatabase("IPBlacklistTest", 1000, 10);
+
+      t.updateAddresses(a, s, function(e, r) {
+        if (e) {
+          done(e);
+        } else {
+          var p = {
+            TableName: "IPBlacklistTest",
+            KeyConditionExpression: "IPAddress = :ipaddress",
+            FilterExpression: "SourceRBL = :source",
+            ExpressionAttributeValues: {
+              ":ipaddress": "10.10.0.1",
+              ":source": s
+            }
+          };
+
+          docClient.query(p, function(err, data) {
+            if (err) {
+              done(e);
+            } else {
+              expect(data.Count).to.be.above(0);
+              done();
+            }
+          });
+        }
+      });
+    });
+
+    it("creates records with tor as source", function(done) {
+      const ad = ["192.168.0.1"];
+      const so = "tor";
+      const ta = new IPDatabase("IPBlacklistTest", 1000, 10);
+
+      ta.updateAddresses(ad, so, function(e, r) {
+        if (e) {
+          done(e);
+        } else {
+          var pa = {
+            TableName: "IPBlacklistTest",
+            KeyConditionExpression: "IPAddress = :ipaddress",
+            FilterExpression: "SourceRBL = :source",
+            ExpressionAttributeValues: {
+              ":ipaddress": "192.168.0.1",
+              ":source": so
+            }
+          };
+
+          docClient.query(pa, function(err, data) {
             if (err) {
               done(e);
             } else {

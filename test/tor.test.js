@@ -1,26 +1,39 @@
 'use strict';
 
-var expect = require('chai').expect;
-var https = require('https');
-var readline = require('readline');
+const expect = require('chai').expect;
+const https = require('https');
+const readline = require('readline');
+const nock = require('nock');
 const tor = require('../lib/tor.js');
 
 describe("Tor", function() {
-  describe("Verify endpoint", function() {
-    it("returns IP addresses", function() {
-      tor.getTorAddresses(function(err, results) {
-        expect(err).to.be.null;
+  beforeEach(function(done) {
+    const scope = nock('https://check.torproject.org')
+    .get('/exit-addresses')
+    .replyWithFile(200, __dirname + '/data/tor.mock.txt');
+    done();
+  });
+
+  it("returns IP addresses", function(done) {
+    tor.getTorAddresses(function(err, results) {
+      if (err) {
+        done(err);
+      } else {
         expect(results).to.be.an('array').that.is.not.empty;
-      });
+        done();
+      }
     });
   });
 
-  describe("Verify records", function() {
-    it("checks IP address count", function() {
-      tor.getTorAddresses(function(err, results) {
+  it("checks IP address count", function(done) {
+    tor.getTorAddresses(function(err, results) {
+      if (err) {
+        done(err);
+      } else {
         var regex = new RegExp('^ExitAddress ((?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])(?:/(?:3[0-2]|[1-2][0-9]|[0-9]))?)');
         var addresses = [];
-        https.get("https://check.torproject.org/exit-addresses", function (response) {
+        nock.restore();
+        https.get('https://check.torproject.org/exit-addresses', function (response) {
           var reader = readline.createInterface({ terminal: false, input: response });
           reader.on('line', function (line) {
             var result = regex.exec(line);
@@ -31,12 +44,17 @@ describe("Tor", function() {
             }
           });
           reader.on('close', function () {
-            expect(addresses.length.to.be.equal.to(results.length));
+            expect(addresses.length).to.equal(results.length);
+            done();
           });
         }).on('error', function (err) {
-          console.log(err, err.stack);
+          done(err);
         });
-      });
+      }
     });
+  });
+
+  afterEach(function() {
+    nock.cleanAll();
   });
 });
