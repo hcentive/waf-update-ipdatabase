@@ -1,6 +1,6 @@
 var aws = require('aws-sdk');
 var async = require('async');
-var IPDatabase = require('./lib/dynamodb.js');
+var IPDatabase = require('./lib/ipdatabase.js');
 var alienvault = require('./lib/alienvault.js');
 var tor = require('./lib/tor.js');
 var et = require('./lib/emergingthreats.js');
@@ -77,7 +77,7 @@ exports.handler = function(event, context, cback) {
           // context.done('error', 'IP blacklist database update failed : ' + err)
           // process.exit(1);
         } else {
-          console.log("Done updating IP database with results - " + results);
+          console.log("Done updating IP database with results - " + results.length + " addresses");
           cback(null, results);
           // context.done(results);
         }
