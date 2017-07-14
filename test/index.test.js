@@ -39,7 +39,7 @@ describe("Index", function(done) {
   });
 
   it("calls exports.handler", function(done) {
-    this.timeout(600000);
+    this.timeout(0);
     index.handler({tableName: 'IPBlacklistTest'}, {}, function(err, results) {
       if (err) {
         done(err);
@@ -60,18 +60,32 @@ describe("Index", function(done) {
 
   afterEach(function(done) {
     nock.cleanAll();
+    console.log('Cleaning up...');
     var dynamodb = new aws.DynamoDB();
     dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
       if (e) {
         done(e);
       } else {
-        dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
-          if (err) {
-            done(err);
-          } else {
-            done();
-          }
-        });
+        console.log('delete table when active');
+        (function checkStatus() {
+          var descTablePromise = dynamodb.describeTable({ TableName: "IPBlacklistTest" }).promise();
+          descTablePromise.then(function(r) {
+            console.log(r.Table.TableStatus);
+            if (r.Table.TableStatus === 'ACTIVE') {
+              dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+                if (err) {
+                  done(err);
+                } else {
+                  done();
+                }
+              });
+            } else {
+              checkStatus();
+            }
+          }).catch(function(er) {
+            done(er);
+          });
+        })();
       }
     });
   });

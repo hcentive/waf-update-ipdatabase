@@ -6,7 +6,6 @@ var tor = require('./lib/tor.js');
 var et = require('./lib/emergingthreats.js');
 
 exports.handler = function(event, context, cback) {
-  // var updateIPDatabase = function(event, context) {
   if (event.tableName !== undefined) {
     var ipdb = new IPDatabase(event.tableName);
   } else {
@@ -17,7 +16,7 @@ exports.handler = function(event, context, cback) {
     if (err) {
       cback(err, null);
     } else {
-      async.parallel([
+      async.series([
         function (callback) {
           alienvault.getAVAddresses(null, function(error, data) {     // Update DynamoDB database with new IP addresses in Alienvault's RBL.
             if (error) {
@@ -72,26 +71,12 @@ exports.handler = function(event, context, cback) {
       ],
       function(err, results) {
         if (err) {
-          // console.log(err, err.stack);
           cback(err, null);
-          // context.done('error', 'IP blacklist database update failed : ' + err)
-          // process.exit(1);
         } else {
-          console.log("Done updating IP database with results - " + results.length + " addresses");
-          cback(null, results);
-          // context.done(results);
+          console.log("Done updating IP database", results.reduce((a, b) => a+b).length());
+          cback(null, results);          
         }
       });
     }
   });
 }
-
-// function callback(err, data) {
-//   if (err) {
-//     console.log(err, err.stack);
-//   } else {
-//     console.log(data);
-//   }
-// }
-
-// updateIPDatabase(callback);
