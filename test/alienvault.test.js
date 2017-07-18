@@ -68,34 +68,4 @@ describe("Alienvault", function() {
       nock.cleanAll();
     });
   });
-
-  // describe("not mocks", function(done) {
-  //   this.timeout(120000);
-  //   it("checks IP address count", function(done) {
-  //     av.getAVAddresses(null, function(err, results) {
-  //       // console.log(results);
-  //       if (err) {
-  //         done(err);
-  //       } else {
-  //         var options = {
-  //           url: config.av_url,
-  //           method: 'GET',
-  //           secureOptions: constants.SSL_OP_NO_TLSv1_2,
-  //           headers: {'X-OTX-API-KEY': config.av_otx_api_key}
-  //         };
-  //
-  //         request.get(options, function(e, response, body) {
-  //           if (e) {
-  //             done(e);
-  //           } else {
-  //             var json = JSON.parse(body);
-  //             var count = json.count;
-  //             expect(count).to.equal(results.length);
-  //             done();
-  //           }
-  //         });
-  //       }
-  //     });
-  //   });
-  // });
 });

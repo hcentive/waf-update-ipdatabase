@@ -46,7 +46,6 @@ describe("Index", function() {
         if (err) {
           done(err);
         } else {
-          console.log("Index done");
           //check if table is created
           var dynamodb = new aws.DynamoDB();
           dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
@@ -72,8 +71,7 @@ describe("Index", function() {
           console.log('delete table when active');
           (function checkStatus() {
             var descTablePromise = dynamodb.describeTable({ TableName: "IPBlacklistTest" }).promise();
-            descTablePromise.then(function(r) {
-              console.log(r.Table.TableStatus);
+            descTablePromise.then(function(r) {              
               if (r.Table.TableStatus === 'ACTIVE') {
                 dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
                   if (err) {
