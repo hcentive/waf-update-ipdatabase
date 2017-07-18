@@ -71,10 +71,11 @@ exports.handler = function(event, context, cback) {
       ],
       function(err, results) {
         if (err) {
+          console.log("ERROR", err);
           cback(err, null);
         } else {
           console.log("Done updating IP database", results.reduce((a, b) => a+b).length());
-          cback(null, results);          
+          cback(null, results);
         }
       });
     }

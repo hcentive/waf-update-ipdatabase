@@ -8,27 +8,29 @@ const IPDatabase = require("../lib/ipdatabase.js");
 aws.config.setPromisesDependency(null);
 
 // test locally
-aws.config.update({
-    region: "us-east-1",
-    endpoint: "http://localhost:4569"
-});
+// aws.config.update({
+//     region: "us-east-1",
+//     endpoint: "http://localhost:8000"
+// });
 
 describe("DynamoDB", function() {
+  const tableName = "IPBlacklistTest";
   describe("Creates IPDatabase table", function(done) {
+    this.timeout(0);
     var dynamodb = new aws.DynamoDB();
 
     it("returns table name", function(done) {
-      var testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
+      var testdb = new IPDatabase(tableName, 1000, 10);
       testdb.createBlacklistTable(function(err, results) {
         if (err) {
           done(err);
         } else {
           // console.log(results);
-          dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+          dynamodb.describeTable({TableName: tableName}, function (e, d) {
             if (e) {
               done(e);
             } else {
-              expect(d.Table.TableName).to.equal("IPBlacklistTest");
+              expect(d.Table.TableName).to.equal(tableName);
               expect(d.Table.StreamSpecification.StreamEnabled).to.be.true;
               done();
             }
@@ -38,11 +40,11 @@ describe("DynamoDB", function() {
     });
 
     after(function(done) {
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           done(e);
         } else {
-          dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+          dynamodb.deleteTable({TableName: tableName}, function(err, results) {
             done(err);
           });
         }
@@ -51,10 +53,11 @@ describe("DynamoDB", function() {
   });
 
   describe("Updates blacklist table", function(done) {
+    this.timeout(0);
     var dynamodb = new aws.DynamoDB();
     var docClient = new aws.DynamoDB.DocumentClient();
     var tableParams = {
-      TableName: "IPBlacklistTest",
+      TableName: tableName,
       KeySchema: [{
         AttributeName: "IPAddress",
         KeyType: "HASH"
@@ -74,7 +77,7 @@ describe("DynamoDB", function() {
     };
 
     before(function(done) {
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           if (e.code === 'ResourceNotFoundException') {
             // table does not exist. create it
@@ -83,7 +86,7 @@ describe("DynamoDB", function() {
                 done(e);
               } else {
                 dynamodb.waitFor('tableExists', {
-                  TableName: "IPBlacklistTest"
+                  TableName: tableName
                 }, (err, dat) => {
                   done(e);
                 });
@@ -101,14 +104,14 @@ describe("DynamoDB", function() {
     it("creates records with Alienvault as source", function(done) {
       const addresses = ["127.0.0.1"];
       const source = "alienvault";
-      const testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
+      const testdb = new IPDatabase(tableName, 1000, 10);
 
       testdb.updateAddresses(addresses, source, function(e, r) {
         if (e) {
           done(e);
         } else {
           var params = {
-            TableName: "IPBlacklistTest",
+            TableName: tableName,
             KeyConditionExpression: "IPAddress = :ipaddress",
             FilterExpression: "SourceRBL = :source",
             ExpressionAttributeValues: {
@@ -132,14 +135,14 @@ describe("DynamoDB", function() {
     it("creates records with Emerging Threats as source", function(done) {
       const a = ["10.10.0.1"];
       const s = "emergingthreats";
-      const t = new IPDatabase("IPBlacklistTest", 1000, 10);
+      const t = new IPDatabase(tableName, 1000, 10);
 
       t.updateAddresses(a, s, function(e, r) {
         if (e) {
           done(e);
         } else {
           var p = {
-            TableName: "IPBlacklistTest",
+            TableName: tableName,
             KeyConditionExpression: "IPAddress = :ipaddress",
             FilterExpression: "SourceRBL = :source",
             ExpressionAttributeValues: {
@@ -163,14 +166,14 @@ describe("DynamoDB", function() {
     it("creates records with tor as source", function(done) {
       const ad = ["192.168.0.1"];
       const so = "tor";
-      const ta = new IPDatabase("IPBlacklistTest", 1000, 10);
+      const ta = new IPDatabase(tableName, 1000, 10);
 
       ta.updateAddresses(ad, so, function(e, r) {
         if (e) {
           done(e);
         } else {
           var pa = {
-            TableName: "IPBlacklistTest",
+            TableName: tableName,
             KeyConditionExpression: "IPAddress = :ipaddress",
             FilterExpression: "SourceRBL = :source",
             ExpressionAttributeValues: {
@@ -191,12 +194,69 @@ describe("DynamoDB", function() {
       });
     });
 
+    it("updates database with new addresses", function(done) {
+      //create items with addresses
+      const source = "testsource";
+      var params = {
+        TableName: tableName,
+        Item: {
+         "IPAddress": {
+           S: "10.0.0.1"
+          },
+         "SourceRBL": {
+           S: source
+          },
+          "Active": {
+            "S": "true"
+          },
+          "CreatedDate": {
+            "S": (new Date()).toUTCString()
+          }
+        },
+        ReturnConsumedCapacity: "TOTAL"
+      };
+      const ipdb = new IPDatabase(tableName, 1000, 10);
+      dynamodb.putItem(params, function(error, results) {
+        if (error) {
+          done(error);
+        } else {
+          // console.log(results.length);
+          ipdb.waitForTableActive(tableName).then((d) => {
+            // console.log('test record created for ' + source);
+            const addr = ["10.0.0.1", "127.0.0.1", "192.168.0.1"];
+            ipdb.updateAddresses(addr, source, function(e, r) {
+              if (e) {
+                done(e);
+              } else {
+                expect(r.length).to.equal(2);
+                var pa = {
+                  TableName: tableName,
+                  FilterExpression: "SourceRBL = :source",
+                  ExpressionAttributeValues: {
+                    ":source": source
+                  }
+                };
+                docClient.scan(pa, function(err, data) {
+                  if (err) {
+                    done(err);
+                  } else {
+                    expect(data.Count).to.equal(3);
+                    done();
+                  }
+                });
+              }
+            });
+          }).catch((e) => done(e));
+        }
+      });
+    });
+
     after(function(done) {
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           done(e);
         } else {
-          dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+          dynamodb.deleteTable({TableName: tableName}, function(err, results) {
             done(err);
           });
         }
@@ -205,10 +265,11 @@ describe("DynamoDB", function() {
   });
 
   describe("Retrieves blacklist records", function(done) {
+    this.timeout(0);
     var dynamodb = new aws.DynamoDB();
     before("creates test database", function(done) {
       var tableParams = {
-        TableName: "IPBlacklistTest",
+        TableName: tableName,
         KeySchema: [{
           AttributeName: "IPAddress",
           KeyType: "HASH"
@@ -226,7 +287,7 @@ describe("DynamoDB", function() {
           StreamViewType: "NEW_AND_OLD_IMAGES"
         }
       };
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           if (e.code === 'ResourceNotFoundException') {
             // table does not exist. create it
@@ -235,7 +296,7 @@ describe("DynamoDB", function() {
                 done(e);
               } else {
                 dynamodb.waitFor('tableExists', {
-                  TableName: "IPBlacklistTest"
+                  TableName: tableName
                 }, (err, dat) => {
                   if (e) {
                     done(e);
@@ -243,7 +304,7 @@ describe("DynamoDB", function() {
                     // create test data
                     const a = ["10.10.0.1"];
                     const s = "emergingthreats";
-                    const t = new IPDatabase("IPBlacklistTest", 1000, 10);
+                    const t = new IPDatabase(tableName, 1000, 10);
 
                     t.updateAddresses(a, s, function(e, r) {
                       done(e);
@@ -262,7 +323,7 @@ describe("DynamoDB", function() {
     });
 
     it("gets active blacklist records", function(done) {
-      const testdb = new IPDatabase("IPBlacklistTest", 1000, 10);
+      const testdb = new IPDatabase(tableName, 1000, 10);
       testdb.getActiveIPAddresses().then(function(addresses) {
         expect(addresses).to.include("10.10.0.1");
         done();
@@ -272,11 +333,11 @@ describe("DynamoDB", function() {
     });
 
     after("deletes test database", function(done) {
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           done(e);
         } else {
-          dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+          dynamodb.deleteTable({TableName: tableName}, function(err, results) {
             done(err);
           });
         }

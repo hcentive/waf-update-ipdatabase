@@ -14,79 +14,83 @@ aws.config.setPromisesDependency(null);
 // test locally
 aws.config.update({
     region: "us-east-1",
-    endpoint: "http://localhost:4569"
+    endpoint: "http://localhost:8000"
 });
 
-describe("Index", function(done) {
-  beforeEach(function(done) {
-    const avScope = nock('https://otx.alienvault.com', {
-        reqheaders: {
-          'X-OTX-API-KEY': config.av_otx_api_key
-        }
-      })
-      .get('/api/v1/pulses/subscribed')
-      .replyWithFile(200, __dirname + '/data/av.mock.json');
-
-    const etScope = nock('https://rules.emergingthreats.net')
-      .get('/fwrules/emerging-Block-IPs.txt')
-      .replyWithFile(200, __dirname + '/data/et.mock.txt');
-
-    const torScope = nock('https://check.torproject.org')
-      .get('/exit-addresses')
-      .replyWithFile(200, __dirname + '/data/tor.mock.txt');
-
-    done();
-  });
-
-  it("calls exports.handler", function(done) {
+describe("Index", function() {
+  describe("Calls handler", function(done) {
     this.timeout(0);
-    index.handler({tableName: 'IPBlacklistTest'}, {}, function(err, results) {
-      if (err) {
-        done(err);
-      } else {
-        //check if table is created
-        var dynamodb = new aws.DynamoDB();
-        dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
-          if (e) {
-            done(e);
-          } else {
-            expect(d.Table.TableName).to.equal("IPBlacklistTest");
-            done();
-          }
-        });
-      }
-    });
-  });
 
-  afterEach(function(done) {
-    nock.cleanAll();
-    console.log('Cleaning up...');
-    var dynamodb = new aws.DynamoDB();
-    dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
-      if (e) {
-        done(e);
-      } else {
-        console.log('delete table when active');
-        (function checkStatus() {
-          var descTablePromise = dynamodb.describeTable({ TableName: "IPBlacklistTest" }).promise();
-          descTablePromise.then(function(r) {
-            console.log(r.Table.TableStatus);
-            if (r.Table.TableStatus === 'ACTIVE') {
-              dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
-                if (err) {
-                  done(err);
-                } else {
-                  done();
-                }
-              });
+    before(function(done) {
+      const avScope = nock('https://otx.alienvault.com', {
+          reqheaders: {
+            'X-OTX-API-KEY': config.av_otx_api_key
+          }
+        })
+        .get('/api/v1/pulses/subscribed')
+        .replyWithFile(200, __dirname + '/data/av.mock.json');
+
+      const etScope = nock('https://rules.emergingthreats.net')
+        .get('/fwrules/emerging-Block-IPs.txt')
+        .replyWithFile(200, __dirname + '/data/et.mock.txt');
+
+      const torScope = nock('https://check.torproject.org')
+        .get('/exit-addresses')
+        .replyWithFile(200, __dirname + '/data/tor.mock.txt');
+
+      done();
+    });
+
+    it("calls exports.handler", function(done) {
+      index.handler({tableName: 'IPBlacklistTest'}, {}, function(err, results) {
+        if (err) {
+          done(err);
+        } else {
+          console.log("Index done");
+          //check if table is created
+          var dynamodb = new aws.DynamoDB();
+          dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+            if (e) {
+              done(e);
             } else {
-              checkStatus();
+              expect(d.Table.TableName).to.equal("IPBlacklistTest");
+              done();
             }
-          }).catch(function(er) {
-            done(er);
           });
-        })();
-      }
+        }
+      });
+    });
+
+    after(function(done) {
+      nock.cleanAll();
+      console.log('Cleaning up...');
+      var dynamodb = new aws.DynamoDB();
+      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+        if (e) {
+          done(e);
+        } else {
+          console.log('delete table when active');
+          (function checkStatus() {
+            var descTablePromise = dynamodb.describeTable({ TableName: "IPBlacklistTest" }).promise();
+            descTablePromise.then(function(r) {
+              console.log(r.Table.TableStatus);
+              if (r.Table.TableStatus === 'ACTIVE') {
+                dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+                  if (err) {
+                    done(err);
+                  } else {
+                    done();
+                  }
+                });
+              } else {
+                checkStatus();
+              }
+            }).catch(function(er) {
+              done(er);
+            });
+          })();
+        }
+      });
     });
   });
 });
