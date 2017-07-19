@@ -12,12 +12,14 @@ const config = JSON.parse(fs.readFileSync(path.join('.', 'test', 'config.json'))
 aws.config.setPromisesDependency(null);
 
 // test locally
-aws.config.update({
-    region: "us-east-1",
-    endpoint: "http://localhost:8000"
-});
+// aws.config.update({
+//     region: "us-east-1",
+//     endpoint: "http://localhost:8000"
+// });
 
 describe("Index", function() {
+  const tableName = 'IPBlacklistTest';
+  const dynamodb = new aws.DynamoDB();
   describe("Calls handler", function(done) {
     this.timeout(0);
 
@@ -42,18 +44,33 @@ describe("Index", function() {
     });
 
     it("calls exports.handler", function(done) {
-      index.handler({tableName: 'IPBlacklistTest'}, {}, function(err, results) {
+      index.handler({tableName: tableName}, {}, function(err, results) {
         if (err) {
           done(err);
         } else {
           //check if table is created
-          var dynamodb = new aws.DynamoDB();
-          dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+          dynamodb.describeTable({TableName: tableName}, function (e, d) {
             if (e) {
               done(e);
             } else {
-              expect(d.Table.TableName).to.equal("IPBlacklistTest");
-              done();
+              expect(d.Table.TableName).to.equal(tableName);
+              //test number of records
+              var docClient = new aws.DynamoDB.DocumentClient();
+              var params = {
+                TableName: tableName,
+                FilterExpression: "Active = :active",
+                ExpressionAttributeValues: {
+                  ":active": "true"
+                }
+              };
+              docClient.scan(params, function(err, data) {
+                if (err) {
+                  done(err);
+                } else {
+                  expect(data.Count).to.equal(results.length);
+                  done();
+                }
+              });
             }
           });
         }
@@ -63,17 +80,16 @@ describe("Index", function() {
     after(function(done) {
       nock.cleanAll();
       console.log('Cleaning up...');
-      var dynamodb = new aws.DynamoDB();
-      dynamodb.describeTable({TableName: "IPBlacklistTest"}, function (e, d) {
+      dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           done(e);
         } else {
           console.log('delete table when active');
           (function checkStatus() {
-            var descTablePromise = dynamodb.describeTable({ TableName: "IPBlacklistTest" }).promise();
-            descTablePromise.then(function(r) {              
+            var descTablePromise = dynamodb.describeTable({ TableName: tableName }).promise();
+            descTablePromise.then(function(r) {
               if (r.Table.TableStatus === 'ACTIVE') {
-                dynamodb.deleteTable({TableName: "IPBlacklistTest"}, function(err, results) {
+                dynamodb.deleteTable({TableName: tableName}, function(err, results) {
                   if (err) {
                     done(err);
                   } else {

@@ -23,14 +23,10 @@ exports.handler = function(event, context, cback) {
               callback(error, null);
             } else {
               console.log("Updating blacklist table with " + data.length + " addresses from Alienvault");
-              ipdb.updateAddresses(data, "alienvault", function(e, d) {
-                if (e) {
-                  callback(e, null);
-                } else {
-                  console.log("Done updating IP database with Alienvault addresses");
-                  callback(null, d);
-                }
-              });
+              ipdb.updateAddresses(data, "alienvault").then((d) => {
+                console.log("\nDone updating IP database with Alienvault addresses");
+                callback(null, d);
+              }).catch((e) => callback(e, null));
             }
           });
         },
@@ -40,14 +36,10 @@ exports.handler = function(event, context, cback) {
               callback(error, null);
             } else {
               console.log("Updating blacklist table with " + data.length + " addresses from Tor");
-              ipdb.updateAddresses(data, "tor", function(e, d) {
-                if (e) {
-                  callback(e, null);
-                } else {
-                  console.log("Done updating IP database with Tor addresses");
-                  callback(null, d);
-                }
-              });
+              ipdb.updateAddresses(data, "tor").then((d) => {
+                console.log("\nDone updating IP database with Tor addresses");
+                callback(null, d);
+              }).catch((e) => callback(e, null));
             }
           });
         },
@@ -57,20 +49,19 @@ exports.handler = function(event, context, cback) {
               callback(error, null);
             } else {
               console.log("Updating blacklist table with " + data.length + " addresses from Emerging Threats");
-              ipdb.updateAddresses(data, "emergingthreats", function(e, d) {
-                if (e) {
-                  callback(e, null);
-                } else {
-                  console.log("Done updating IP database with Emerging Threats addresses");
-                  callback(null, d);
-                }
-              });
+              ipdb.updateAddresses(data, "emergingthreats").then((d) => {
+                console.log("\nDone updating IP database with Emerging Threats addresses");
+                callback(null, d);
+              }).catch((e) => callback(e, null));
             }
           });
         }
       ],
       function(er, results) {
-        cback(er, results);        
+        var r = results.reduce(function(a, b) {
+          return a.concat(b);
+        });
+        cback(er, r);
       });
     }
   });
