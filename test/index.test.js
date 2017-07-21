@@ -12,10 +12,10 @@ const config = JSON.parse(fs.readFileSync(path.join('.', 'test', 'config.json'))
 aws.config.setPromisesDependency(null);
 
 // test locally
-// aws.config.update({
-//     region: "us-east-1",
-//     endpoint: "http://localhost:8000"
-// });
+aws.config.update({
+  region: "us-east-1",
+  endpoint: "http://localhost:4569"
+});
 
 describe("Index", function() {
   const tableName = 'IPBlacklistTest';
