@@ -25,42 +25,35 @@ describe("Alienvault", function() {
     });
 
     it("returns IP addresses", function(done) {
-      av.getAVAddresses(null, function(err, results) {
-        if (err) {
-          done(err);
-        } else {
-          expect(results).to.be.an('array').that.is.not.empty;
-          done();
-        }
+      av.getAddresses().then(function(results) {
+        expect(results).to.be.an('array').that.is.not.empty;
+        done();
+      }).catch(function(err) {
+        done(err);
       });
     });
 
     it("checks IP addresses", function(done) {
-      av.getAVAddresses(null, function(err, results) {
-        if (err) {
-          done(err);
-        } else {
-          expect(results).to.be.an('array').that.includes('198.154.224.48');
-          done();
-        }
+      av.getAddresses().then(function(results) {
+        expect(results).to.be.an('array').that.includes('198.154.224.48');
+        done();
+      }).catch(function(err) {
+        done(err);
       });
     });
 
     it("checks IP address count", function(done) {
-      av.getAVAddresses(null, function(err, results) {
-        // console.log(results);
-        if (err) {
-          done(err);
-        } else {
-          const mockdata = JSON.parse(fs.readFileSync(path.join('.', 'test', 'data', 'av.mock.json')));
-          const indicators = _.map(mockdata.results, function(result) {
-            var ipindicators = _.pluck(_.where(result.indicators, {type: "IPv4"}), "indicator");
-            return _.union(ipindicators);
-          });
-          // console.log(_.flatten(indicators));
-          expect(results.length).to.equal(_.flatten(indicators).length);
-          done();
-        }
+      av.getAddresses().then(function(results) {
+        const mockdata = JSON.parse(fs.readFileSync(path.join('.', 'test', 'data', 'av.mock.json')));
+        const indicators = _.map(mockdata.results, function(result) {
+          var ipindicators = _.pluck(_.where(result.indicators, {type: "IPv4"}), "indicator");
+          return _.union(ipindicators);
+        });
+        // console.log(_.flatten(indicators));
+        expect(results.length).to.equal(_.flatten(indicators).length);
+        done();
+      }).catch(function(err) {
+        done(err);
       });
     });
 

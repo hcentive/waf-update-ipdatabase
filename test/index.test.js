@@ -12,10 +12,10 @@ const config = JSON.parse(fs.readFileSync(path.join('.', 'test', 'config.json'))
 aws.config.setPromisesDependency(null);
 
 // test locally
-aws.config.update({
-  region: "us-east-1",
-  endpoint: "http://localhost:4569"
-});
+// aws.config.update({
+//   region: "us-east-1",
+//   endpoint: "http://localhost:4569"
+// });
 
 describe("Index", function() {
   const tableName = 'IPBlacklistTest';
@@ -54,23 +54,7 @@ describe("Index", function() {
               done(e);
             } else {
               expect(d.Table.TableName).to.equal(tableName);
-              //test number of records
-              var docClient = new aws.DynamoDB.DocumentClient();
-              var params = {
-                TableName: tableName,
-                FilterExpression: "Active = :active",
-                ExpressionAttributeValues: {
-                  ":active": "true"
-                }
-              };
-              docClient.scan(params, function(err, data) {
-                if (err) {
-                  done(err);
-                } else {
-                  expect(data.Count).to.equal(results.length);
-                  done();
-                }
-              });
+              done();              
             }
           });
         }
@@ -80,11 +64,11 @@ describe("Index", function() {
     after(function(done) {
       nock.cleanAll();
       console.log('Cleaning up...');
+      // done();
       dynamodb.describeTable({TableName: tableName}, function (e, d) {
         if (e) {
           done(e);
         } else {
-          console.log('delete table when active');
           (function checkStatus() {
             var descTablePromise = dynamodb.describeTable({ TableName: tableName }).promise();
             descTablePromise.then(function(r) {

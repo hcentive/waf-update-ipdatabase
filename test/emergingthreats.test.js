@@ -15,18 +15,16 @@ describe("Emerging Threats", function() {
   });
 
   it("returns IP addresses", function(done) {
-    et.getETAddresses(function(err, results) {
-      if (err) {
-        done(err);
-      } else {
-        expect(results).to.be.an('array').that.is.not.empty;
-        done();
-      }
+    et.getAddresses().then(function(results) {
+      expect(results).to.be.an('array').that.is.not.empty;
+      done();
+    }).catch(function(err) {
+      done(err);
     });
   });
 
   it("checks IP address count", function(done) {
-    et.getETAddresses(function(err, results) {
+    et.getAddresses().then(function(results) {
       var regex = new RegExp('^((?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])(?:/(?:3[0-2]|[1-2][0-9]|[0-9]))?)');
       var ranges = [];
       nock.restore();
@@ -47,6 +45,8 @@ describe("Emerging Threats", function() {
       }).on('error', function (err) {
         done(err);
       });
+    }).catch(function(err) {
+      done(err);
     });
   });
 

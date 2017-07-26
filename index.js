@@ -1,67 +1,45 @@
 var aws = require('aws-sdk');
 var async = require('async');
 var IPDatabase = require('./lib/ipdatabase.js');
-var alienvault = require('./lib/alienvault.js');
+var av = require('./lib/alienvault.js');
 var tor = require('./lib/tor.js');
 var et = require('./lib/emergingthreats.js');
 
-exports.handler = function(event, context, cback) {
+exports.handler = function(event, context, callback) {
   if (event.tableName !== undefined) {
     var ipdb = new IPDatabase(event.tableName);
   } else {
     var ipdb = new IPDatabase();
   }
 
-  ipdb.createBlacklistTable(function(err, da) {
-    if (err) {
-      cback(err, null);
+  ipdb.createBlacklistTable(function(error, data) {
+    if (error) {
+      callback(error, null);
     } else {
-      async.series([
-        function (callback) {
-          alienvault.getAVAddresses(null, function(error, data) {     // Update DynamoDB database with new IP addresses in Alienvault's RBL.
-            if (error) {
-              callback(error, null);
-            } else {
-              console.log("Updating blacklist table with " + data.length + " addresses from Alienvault");
-              ipdb.updateAddresses(data, "alienvault").then((d) => {
-                console.log("\nDone updating IP database with Alienvault addresses");
-                callback(null, d);
-              }).catch((e) => callback(e, null));
-            }
-          });
-        },
-        function(callback) {
-          tor.getTorAddresses(function(error, data) {       // Update DynamoDB database with new IP addresses in Tor Exit Nodes.
-            if (error) {
-              callback(error, null);
-            } else {
-              console.log("Updating blacklist table with " + data.length + " addresses from Tor");
-              ipdb.updateAddresses(data, "tor").then((d) => {
-                console.log("\nDone updating IP database with Tor addresses");
-                callback(null, d);
-              }).catch((e) => callback(e, null));
-            }
-          });
-        },
-        function(callback) {
-          et.getETAddresses(function(error, data) {
-            if (error) {
-              callback(error, null);
-            } else {
-              console.log("Updating blacklist table with " + data.length + " addresses from Emerging Threats");
-              ipdb.updateAddresses(data, "emergingthreats").then((d) => {
-                console.log("\nDone updating IP database with Emerging Threats addresses");
-                callback(null, d);
-              }).catch((e) => callback(e, null));
-            }
-          });
-        }
-      ],
-      function(er, results) {
-        var r = results.reduce(function(a, b) {
-          return a.concat(b);
+      Promise.all([av.getAddresses(), et.getAddresses(), tor.getAddresses()])
+      .then(([avaddr, etaddr, toraddr]) => {
+        addresses = avaddr.concat(etaddr, toraddr);
+        console.log('Update database capacity before writing');
+        ipdb.updateDBWriteCapacity(addresses.length).then(function(d) {
+          console.log('Database capacity updated');
+          Promise.all([ipdb.updateAddresses(avaddr, "alienvault"),
+                      ipdb.updateAddresses(etaddr, "emergingthreats"),
+                      ipdb.updateAddresses(toraddr, "tor")])
+          .then(([avres, etres, torres]) => {
+            console.log('Updated IPDB with - ');
+            console.log('\t* Alienvault - ' + avres.length);
+            console.log('\t* Emergingthreats - ' + etres.length);
+            console.log('\t* Tor - ' + torres.length);
+
+            console.log('Reset database capacity');
+            ipdb.updateDBWriteCapacity(ipdb.tableCapacity)
+              .then((r) => callback(null, addresses))
+              .catch((e) => callback(e, null));
+          }).catch((err) => callback(err, null));
+        }).catch(function(e) {
+          console.log(e);
+          callback(e, null);
         });
-        cback(er, r);
       });
     }
   });
